@@ -1,0 +1,25 @@
+{
+  "recommended_threshold": 0.4,
+  "should_trigger": [
+    {"text": "帮我把这个 GitHub 仓库画成一张架构图。", "family": "zh_repo_map"},
+    {"text": "这个项目的模块是怎么组织和连接的？做个可交互 HTML。", "family": "zh_structure"},
+    {"text": "Generate a repo map for this local codebase and show the important module relationships.", "family": "en_repo_map"},
+    {"text": "Turn this GitHub repository into an interactive architecture blueprint.", "family": "en_blueprint"},
+    {"text": "画一下这个 skill 的文件结构和装配流程。", "family": "skill_repo"},
+    {"text": "Create a module map explaining how the CLI entrypoint, config, core logic, and tests connect.", "family": "cli_repo"}
+  ],
+  "should_not_trigger": [
+    {"text": "给我画一个用户注册业务流程图。", "family": "business_flowchart"},
+    {"text": "根据截图复刻这个网页界面。", "family": "ui_implementation"},
+    {"text": "解释这个单文件脚本的每一行。", "family": "line_by_line_code"},
+    {"text": "生成一张数据库 ER 图，不需要查看代码仓库。", "family": "database_er"},
+    {"text": "Design a landing page mockup for my product.", "family": "ui_mockup"}
+  ],
+  "near_neighbor": [
+    {"text": "列出这个仓库的完整目录树，不需要架构分析。", "family": "directory_listing"},
+    {"text": "生成这个项目精确到函数级别的调用图。", "family": "symbol_call_graph"},
+    {"text": "Review this repository and identify security vulnerabilities.", "family": "security_review"},
+    {"text": "给 README 加一张 Mermaid 安装流程图。", "family": "readme_mermaid"},
+    {"text": "Summarize what this repository does in two paragraphs.", "family": "repo_summary"}
+  ]
+}

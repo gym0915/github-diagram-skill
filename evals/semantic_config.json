@@ -1,0 +1,34 @@
+{
+  "fallback_positive_concepts": ["repository", "architecture_map"],
+  "positive_concepts": {
+    "repository": {
+      "weight": 0.42,
+      "phrases": ["github repository", "repository", "repo", "codebase", "github 仓库", "代码仓库", "仓库", "项目", "这个 skill"]
+    },
+    "architecture_map": {
+      "weight": 0.46,
+      "phrases": ["architecture map", "architecture diagram", "repo map", "module map", "dependency blueprint", "architecture blueprint", "structure diagram", "架构图", "结构图", "模块图", "装配蓝图", "模块", "怎么组织", "怎么连接", "装配流程"]
+    },
+    "interactive_html": {
+      "weight": 0.12,
+      "phrases": ["interactive html", "interactive", "self-contained html", "可交互 html", "可交互", "单文件 html"]
+    }
+  },
+  "negative_concepts": {
+    "generic_visual": {
+      "weight": 0.55,
+      "exclusive": true,
+      "phrases": ["business flowchart", "landing page", "ui mockup", "业务流程图", "网页界面", "产品原型"]
+    },
+    "non_architecture_task": {
+      "weight": 0.5,
+      "exclusive": true,
+      "phrases": ["line by line", "security vulnerabilities", "summarize", "每一行", "安全漏洞", "总结"]
+    },
+    "exact_call_graph": {
+      "weight": 0.45,
+      "exclusive": true,
+      "phrases": ["function-level call graph", "symbol-level call graph", "函数级别的调用图", "符号级调用图"]
+    }
+  }
+}
