@@ -9,20 +9,23 @@ description: Analyze a GitHub repository or local codebase and generate an inter
 
 ## 工作流
 
-1. 确认目标仓库和输出位置。输入可以是本地路径或 GitHub URL；用户给出的模块清单只是线索，不替代仓库证据。
+1. 确认目标仓库。输入可以是本地路径或 GitHub URL；用户给出的模块清单只是线索，不替代仓库证据。最终 HTML 默认写入当前 Skill 项目的 `output/`（即本文件所在目录的 `output/`）；只有用户明确指定其他位置时才改用其他位置。
 2. 阅读 [分析方法](references/methodology.md)，检查 README、包清单、入口、配置、核心实现和测试。较大仓库可先运行 `node scripts/extract-modules.mjs <repo-path>` 获取文件清单。
 3. 按实际职责提炼泳道和模块。模块数量与泳道数量是可读性建议，不是硬指标；合并重复职责，忽略 vendored、generated、cache 和依赖目录。
 4. 只记录可由 import、配置、调用、生成或验证流程证明的关系。每个模块必须指向真实相对路径，不因目录相邻而臆造连线。
 5. 按 [数据契约](references/data-schema.md) 编写 `MODULES`、`LINKS`、`LANES`、`KIND_CN` 和 `I18N`，复制 [HTML 引擎](assets/engine.html) 并替换 `__TITLE__`、`__SUBTITLE__`、`__DATA__`。
-6. 运行 `node scripts/validate-html.mjs <output.html>`，再检查桌面与窄屏布局、浅色与深色主题、键盘可达性、hover、单击锁定和语言切换。
+6. 将产物保存为 `output/<descriptive-name>.html`，运行 `node scripts/validate-html.mjs output/<descriptive-name>.html`，再检查桌面与窄屏布局、浅色与深色主题、键盘可达性、hover、单击锁定和语言切换。
+7. 校验通过后，立即用 `mcp__codex_app__open_in_codex` 在当前 Codex 任务的右侧浏览器面板加载该 HTML：`target` 使用 `{ type: "browser", url: "file://<HTML 的绝对路径>" }`，并设置 `placement: "right"`。本地路径含空格或非 URL 安全字符时先编码为有效的 `file://` URL。不得用 `open`、`osascript` 或任何系统浏览器打开产物。
 
 ## 输出契约
 
+- 默认交付到当前 Skill 项目的 `output/<descriptive-name>.html`；目录不存在时创建。生成前检查同名文件，避免覆盖已有产物。
 - 交付一个无需构建步骤和外部资源的 HTML 文件。
 - 图中只保留理解架构所需的关键文件；不要把完整目录树伪装成架构图。
 - 模块路径和连线必须可追溯到仓库证据；不确定关系应省略或明确标注为推断。
 - 产物不得包含生成机器的绝对路径、凭据或私有环境信息。
 - 标题与卡片保持简短，详细说明放在检视面板；只有比较信息才使用表格。
+- 完成后必须在 Codex 侧边栏的浏览器中展示已校验的本地 HTML，而不是启动系统浏览器。
 - 最终说明输出路径、模块与连线数量，以及验证中的错误或警告。
 
 ## 判断边界
@@ -36,6 +39,7 @@ description: Analyze a GitHub repository or local codebase and generate an inter
 ## 资源
 
 - `assets/engine.html`：数据驱动的单文件 HTML 引擎。
+- `output/`：生成的架构图 HTML 产物；其中的文件是输出，不是分析目标或 Skill 指令。
 - `scripts/extract-modules.mjs`：文件清单与体量扫描，不负责语义聚类。
 - `scripts/validate-html.mjs`：检查脚本语法、引用完整性、主题、语言和文件大小。
 - `evals/`：触发、排除和邻近任务的路由回归样例。

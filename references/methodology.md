@@ -106,14 +106,17 @@ find . -not -path './.git/*' -not -path './node_modules/*' -maxdepth 2
 ## Step 6 · 渲染与自检
 
 ```bash
-# 1. 复制 assets/engine.html，并替换三个插槽
+# 1. 复制 assets/engine.html，并替换三个插槽；产物写入当前 Skill 项目的 output/
 # __TITLE__ / __SUBTITLE__ / __DATA__
 
 # 2. 校验
-node scripts/validate-html.mjs output.html
+node scripts/validate-html.mjs output/<descriptive-name>.html
 
-# 3. 浏览器打开看效果
-open output.html
+# 3. 校验通过后，在 Codex 当前任务的右侧浏览器面板打开看效果
+# 使用 mcp__codex_app__open_in_codex：
+# target: { type: "browser", url: "file://<HTML 的绝对路径>" }
+# placement: "right"
+# 不要使用 open、osascript 或系统浏览器。
 ```
 
 ## 反模式（要避开）

@@ -2,7 +2,7 @@
 /**
  * validate-html.mjs
  * 校验最终蓝图 HTML 的结构与数据完整性。
- * 用法：node validate-html.mjs <output.html>
+ * 用法：node scripts/validate-html.mjs output/<descriptive-name>.html
  *
  * 校验项：
  * 1. <script> 过 node --check 语法
@@ -25,7 +25,7 @@ import { execFileSync } from 'node:child_process';
 
 const file = process.argv[2];
 if (!file) {
-  console.error('用法: node validate-html.mjs <output.html>');
+  console.error('用法: node scripts/validate-html.mjs output/<descriptive-name>.html');
   process.exit(1);
 }
 

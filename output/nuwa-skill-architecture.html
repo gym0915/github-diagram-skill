@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<!-- Generated output: keep this artifact under the skill project's output/ directory. -->
+<title>nuwa-skill · 认知蒸馏架构图</title>
+<style>
+/* ============================================================
+   设计 Token — 全部 CSS 变量，主题切换只动 :root [data-theme]
+   ============================================================ */
+:root {
+  --bg: #12120F;
+  --panel: #1C1C1A;
+  --panel-2: #1f1e1a;
+  --line: #33332C;
+  --line-strong: #3A3A32;
+  --line-2: #2a2a26;
+  --dot: #2E2D29;
+  --ink: #F0EFEB;
+  --paper: #F0EFEB;
+  --muted: #8F8E88;
+  --faint: #55554F;
+  --grid: #DEDDD6;
+
+  --c-main: #F2D17E;
+  --c-token: #9FE1CB;
+  --c-ref: #8F8E88;
+  --c-qa: #B0AFA9;
+  --c-blue: #7096D1;
+  --c-amber-soft: #2a2614;
+
+  --fs-1: 21px; --fs-2: 14px; --fs-3: 12.5px;
+  --fs-4: 11.5px; --fs-5: 10.5px; --fs-6: 9.5px;
+  --fw-bold: 700; --fw-extra: 800;
+
+  --r-card: 12px; --r-tag: 99px; --r-swatch: 5px;
+  --r-panel: 14px; --r-table: 8px;
+  --gap-grid: 12px; --gap-stage: 22px; --gap-layout: 24px;
+  --pad-card: 11px 13px; --pad-panel: 14px 18px 18px;
+  --w-inspector: 380px;
+
+  --t-fast: .18s; --ease: cubic-bezier(.2,.7,.3,1.3);
+}
+
+[data-theme="light"] {
+  --bg: #F0EFEB;
+  --panel: #FFFFFF;
+  --panel-2: #F5F4F0;
+  --line: #DEDDD6;
+  --line-strong: #B8B7B0;
+  --line-2: #E8E7E0;
+  --dot: #EFEEEA;
+  --ink: #1C1C1A;
+  --muted: #6A6963;
+  --faint: #8F8E88;
+  --grid: #C6C5BF;
+  --c-ref: #6A6963;
+  --c-qa: #8F8E88;
+  --c-amber-soft: #fdf3d8;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #F0EFEB;
+    --panel: #FFFFFF;
+    --panel-2: #F5F4F0;
+    --line: #DEDDD6;
+    --line-strong: #B8B7B0;
+    --line-2: #E8E7E0;
+    --dot: #EFEEEA;
+    --ink: #1C1C1A;
+    --muted: #6A6963;
+    --faint: #8F8E88;
+    --grid: #C6C5BF;
+    --c-ref: #6A6963;
+    --c-qa: #8F8E88;
+    --c-amber-soft: #fdf3d8;
+  }
+}
+
+/* ============================================================
+   基础
+   ============================================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: 'Inter','PingFang SC','Noto Sans SC',-apple-system,sans-serif;
+  padding: 32px 28px 60px; -webkit-font-smoothing: antialiased;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.wrap { max-width: 1560px; margin: 0 auto; }
+header { max-width: 1560px; margin: 0 auto 26px; }
+h1 { font-size: var(--fs-1); font-weight: var(--fw-extra); letter-spacing: -.02em; }
+header p { font-size: var(--fs-3); color: var(--muted); margin-top: 7px; line-height: 1.7; max-width: 900px; }
+
+/* 顶部工具栏（语言 / 主题切换） */
+.toolbar { display: flex; gap: 8px; margin-top: 14px; align-items: center; flex-wrap: wrap; }
+.toolbar .spacer { flex: 1; }
+.tbtn {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r-tag); padding: 4px 11px; font-size: var(--fs-5);
+  color: var(--ink); cursor: pointer; font-family: inherit;
+  font-weight: 600; letter-spacing: .04em; transition: all var(--t-fast);
+}
+.tbtn:hover { border-color: var(--muted); }
+.tbtn.lang.active { background: var(--c-amber-soft); color: var(--c-main); border-color: var(--c-main); }
+
+.legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 12px; font-size: var(--fs-5); color: var(--muted); }
+.legend i { display: inline-block; width: 22px; height: 0; border-top-width: 2px; margin-right: 6px; vertical-align: middle; }
+.legend .solid { border-top-style: solid; }
+.legend .dash { border-top-style: dashed; border-top-width: 2px; }
+
+/* ============================================================
+   主布局：左 stage + 右 inspector
+   ============================================================ */
+.layout { display: grid; grid-template-columns: 1fr var(--w-inspector); gap: var(--gap-layout); align-items: start; }
+.stage { position: relative; min-width: 0; }
+.wires { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 0; pointer-events: none; }
+
+/* ============================================================
+   泳道
+   ============================================================ */
+.lane { display: grid; grid-template-columns: 96px 1fr; gap: 14px; margin-bottom: 16px; position: relative; z-index: 1; }
+.lanelab { font-size: var(--fs-6); font-weight: var(--fw-bold); letter-spacing: .1em; color: var(--muted);
+  padding-top: 14px; text-align: right; line-height: 1.5; background: var(--bg); }
+.lanelab b { display: block; color: var(--ink); font-size: var(--fs-4); letter-spacing: .04em; }
+.lane .row { display: flex; gap: var(--gap-grid); flex-wrap: wrap; align-items: stretch; }
+
+/* ============================================================
+   模块卡片
+   ============================================================ */
+.mod {
+  position: relative; z-index: 1; background: var(--panel);
+  border: 1px solid var(--line); border-radius: var(--r-card);
+  padding: var(--pad-card); width: 196px; cursor: pointer;
+  transition: opacity var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
+}
+.mod:hover { transform: translateY(-2px); }
+.mod:focus-visible { outline: 2px solid var(--c-main); outline-offset: 3px; }
+.mod .kind { font-size: var(--fs-6); font-weight: var(--fw-bold); letter-spacing: .1em; margin-bottom: 5px; }
+.mod h3 { font-size: 13px; font-weight: var(--fw-bold); letter-spacing: -.01em; line-height: 1.35; }
+.mod .sub { font-size: var(--fs-4); color: var(--muted); margin-top: 5px; line-height: 1.55; }
+.mod .files { font-size: var(--fs-5); color: var(--faint); margin-top: 7px; line-height: 1.5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
+.mod.sel { border-color: var(--ink); }
+.dim { opacity: .22; }
+.hot { border-color: var(--ink); }
+.mod.locked { background: var(--panel-2); border-color: var(--line-strong); }
+.mod.locked::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--c-main); border-radius: var(--r-card) 0 0 var(--r-card); }
+.mod.locked::after { content: attr(data-locked-label); position: absolute; top: 8px; right: 8px;
+  font-size: var(--fs-6); font-weight: var(--fw-bold); letter-spacing: .1em; color: var(--c-main);
+  background: var(--c-amber-soft); padding: 2px 6px; border-radius: var(--r-tag); }
+
+/* ============================================================
+   连线
+   ============================================================ */
+.wire { fill: none; stroke-width: 1.6; transition: opacity var(--t-fast), stroke-width var(--t-fast); }
+.wire.dim { opacity: .08; }
+.wire.hot { stroke-width: 2.6; opacity: 1; }
+.wlabel { font-size: var(--fs-5); fill: var(--muted); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.wlabel.dim { opacity: .1; }
+.wlabel.hot { fill: var(--ink); }
+
+/* ============================================================
+   检视面板
+   ============================================================ */
+.inspector { position: sticky; top: 28px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: var(--r-panel);
+  max-height: calc(100vh - 56px); overflow: auto;
+  display: flex; flex-direction: column; }
+.ip-head { padding: 14px 18px 10px; border-bottom: 1px solid var(--line);
+  display: flex; align-items: baseline; gap: 10px; }
+.ip-name { font-size: var(--fs-4); font-weight: var(--fw-extra); letter-spacing: .18em; color: var(--c-main); }
+.ip-sub { font-size: var(--fs-6); letter-spacing: .14em; color: var(--muted); font-weight: var(--fw-bold); }
+.ip-hint { font-size: var(--fs-5); color: var(--faint); padding: 6px 18px 12px;
+  border-bottom: 1px solid var(--line); line-height: 1.55; }
+.ip-body { padding: var(--pad-panel); font-size: var(--fs-3); line-height: 1.65; color: var(--ink); }
+.ip-file { display: inline-block; font-size: var(--fs-5); font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--c-main); background: var(--c-amber-soft); padding: 2px 7px; border-radius: 6px; margin-bottom: 10px; word-break: break-all; }
+.ip-h2 { font-size: var(--fs-2); font-weight: var(--fw-bold); letter-spacing: -.01em; }
+.ip-role { font-size: var(--fs-5); font-weight: var(--fw-bold); letter-spacing: .1em; margin-top: 4px; }
+.ip-section { margin-top: 14px; }
+.ip-section.first { margin-top: 12px; }
+.ip-lab { font-size: var(--fs-6); font-weight: var(--fw-bold); letter-spacing: .16em; color: var(--c-main); margin-bottom: 6px; }
+.ip-section p { font-size: var(--fs-3); color: var(--ink); line-height: 1.65; }
+
+.ip-tname { font-size: var(--fs-6); font-weight: var(--fw-bold); letter-spacing: .12em; color: var(--muted);
+  margin: 10px 0 5px; text-transform: uppercase; }
+.ip-tname:before { content: ''; display: inline-block; width: 3px; height: 9px; background: var(--c-main);
+  margin-right: 6px; vertical-align: middle; border-radius: 2px; }
+
+table.ip-t { width: 100%; border-collapse: separate; border-spacing: 0;
+  font-size: var(--fs-4); background: var(--panel-2); border-radius: var(--r-table);
+  border: 1px solid var(--line); margin-bottom: 6px; overflow: hidden; }
+table.ip-t th { text-align: left; padding: 6px 9px; color: var(--muted);
+  font-weight: 600; letter-spacing: .06em; font-size: var(--fs-6);
+  text-transform: uppercase; border-bottom: 1px solid var(--line); }
+table.ip-t td { padding: 5px 9px; color: var(--ink);
+  border-bottom: 1px solid var(--line-2); vertical-align: top; line-height: 1.55; }
+table.ip-t td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--fs-5); color: var(--c-main); }
+table.ip-t td.dim { color: var(--muted); }
+table.ip-t tr:last-child td { border-bottom: none; }
+table.ip-t td.k { color: var(--muted); font-weight: 600; width: 38%; font-size: var(--fs-5); }
+
+.tag { display: inline-block; font-size: var(--fs-6); font-weight: var(--fw-bold);
+  padding: 1px 6px; border-radius: var(--r-tag); letter-spacing: .04em; line-height: 1.5; }
+.tag.y { background: #1f2d1c; color: var(--c-token); }
+.tag.n { background: #2d1f1c; color: #E1A79F; }
+.tag.w { background: var(--line); color: var(--muted); }
+[data-theme="light"] .tag.y { background: #d9eed6; color: #2a6b1f; }
+[data-theme="light"] .tag.n { background: #f3d9d4; color: #99331f; }
+
+.sw { display: inline-block; width: 24px; height: 24px; border-radius: var(--r-swatch);
+  vertical-align: middle; border: 1px solid rgba(255,255,255,.08);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
+.sw.light { border: 1px solid var(--line); box-shadow: none; }
+.sw.ladder { width: 96px; border-radius: 4px; border: 1px solid var(--line);
+  background: linear-gradient(to right,
+    #1C1C1A 0%, #1C1C1A 14.28%,
+    #4A4944 14.28%, #4A4944 28.57%,
+    #6A6963 28.57%, #6A6963 42.85%,
+    #8F8E88 42.85%, #8F8E88 57.14%,
+    #B0AFA9 57.14%, #B0AFA9 71.42%,
+    #C6C5BF 71.42%, #C6C5BF 85.71%,
+    #D8D7D1 85.71%, #D8D7D1 100%); }
+.sw.dark { background: #1C1C1A; color: #F0EFEB; font-size: 10px; font-weight: var(--fw-extra);
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid #3a3a32; width: 36px; letter-spacing: .04em; box-shadow: none; }
+
+ol.ip-flow { counter-reset: s; padding: 0; margin: 0; }
+ol.ip-flow li { list-style: none; counter-increment: s; font-size: var(--fs-4); line-height: 1.6;
+  color: var(--ink); padding: 3px 0 3px 24px; position: relative; }
+ol.ip-flow li:before { content: counter(s); position: absolute; left: 0; top: 4px;
+  width: 16px; height: 16px; border-radius: 50%; background: var(--dot); color: var(--c-main);
+  font-size: 10px; font-weight: var(--fw-bold); text-align: center; line-height: 16px; }
+
+.ip-flow-line { font-size: var(--fs-4); color: var(--muted); margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid var(--line); line-height: 1.7; }
+.ip-flow-line b { color: var(--ink); font-weight: 600; display: block; margin-top: 2px; }
+
+@media (max-width: 1180px) {
+  .layout { grid-template-columns: 1fr; }
+  .inspector { position: static; max-height: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+  .mod:hover { transform: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 data-i18n="title">nuwa-skill · 认知蒸馏架构图</h1>
+    <p data-i18n="subtitle">六路证据采集 → 三重验证 → Perspective Skill → 双层质检</p>
+    <div class="toolbar">
+      <button class="tbtn lang" data-lang="zh" data-i18n="langZh">中</button>
+      <button class="tbtn lang" data-lang="en">EN</button>
+      <span class="spacer"></span>
+      <button class="tbtn" id="themeBtn" data-i18n="themeAuto">跟随系统</button>
+    </div>
+    <div class="legend">
+      <span><i class="solid" style="border-color: var(--c-main)"></i><span data-i18n="legendMain">主流程：决策 → 取码 → 组装</span></span>
+      <span><i class="solid" style="border-color: var(--c-token)"></i><span data-i18n="legendToken">Token 注入：形 / 字 / 动 / 色</span></span>
+      <span><i class="dash" style="border-color: var(--c-ref)"></i><span data-i18n="legendRef">参考与正本同步</span></span>
+      <span><i class="dash" style="border-color: var(--c-qa)"></i><span data-i18n="legendQa">质检回环</span></span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div class="stage" id="stage">
+      <svg class="wires" id="wires"></svg>
+      <div id="lanes"></div>
+    </div>
+
+    <aside class="inspector" id="inspector">
+      <div class="ip-head">
+        <span class="ip-name" data-i18n="panel">检视面板</span>
+        <span class="ip-sub">INSPECTOR</span>
+      </div>
+      <div class="ip-hint" data-i18n="panelHint">悬停任意模块查看规格 · 单击锁定</div>
+      <div class="ip-body" id="ip-body"></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DATA  ← 目标仓库的 MODULES / LINKS / LANES / I18N
+   ============================================================ */
+const KIND_CN = {
+  input:'INPUT', orchestrator:'ORCHESTRATE', research:'EVIDENCE', tool:'TOOL',
+  method:'METHOD', template:'TEMPLATE', output:'OUTPUT', qa:'VERIFY',
+  example:'EXAMPLE', policy:'POLICY', ci:'CI', docs:'DOCS'
+};
+
+const LANES = [
+  {id:'entry', lab:'入口与编排', sub:'INTENT · ORCHESTRATE', i18n:{en:{lab:'Entry & Orchestration',sub:'INTENT · ORCHESTRATE'}}},
+  {id:'evidence', lab:'证据采集', sub:'COLLECT · NORMALIZE', i18n:{en:{lab:'Evidence Collection',sub:'COLLECT · NORMALIZE'}}},
+  {id:'synthesis', lab:'提炼与构建', sub:'DISTILL · ASSEMBLE', i18n:{en:{lab:'Synthesis & Build',sub:'DISTILL · ASSEMBLE'}}},
+  {id:'quality', lab:'质量验证', sub:'CHECK · FIDELITY', i18n:{en:{lab:'Quality Verification',sub:'CHECK · FIDELITY'}}},
+  {id:'library', lab:'示例资产', sub:'SPECIMENS · EVIDENCE', i18n:{en:{lab:'Example Library',sub:'SPECIMENS · EVIDENCE'}}},
+  {id:'community', lab:'文档与生态', sub:'DOCUMENT · GOVERN', i18n:{en:{lab:'Docs & Ecosystem',sub:'DOCUMENT · GOVERN'}}}
+];
+
+const MODULES = [
+  {id:'U1', lane:'entry', kind:'input', color:'var(--c-main)', title:'请求分流', sub:'人名、主题或模糊需求', files:'SKILL.md · Phase 0–0B', do:'把明确蒸馏请求送入直接路径，把能力困惑送入诊断推荐路径。', flow:['识别人名或主题','诊断模糊需求','确认用途、语料与档位'], tables:[{name:'两种入口',head:['输入','路径'],rows:[['明确对象','直接蒸馏'],['模糊困惑','诊断后推荐']]}], i18n:{en:{title:'Request Router',sub:'Person, topic, or fuzzy need',files:'SKILL.md · Phase 0–0B',do:'Routes named targets into direct distillation and fuzzy capability needs into diagnosis.',flow:['Identify person or topic','Diagnose fuzzy need','Confirm use, sources, and tier'],tables:[{name:'Two entry modes',head:['Input','Route'],rows:[['Named target','Direct distillation'],['Fuzzy need','Diagnose and recommend']]}]}}},
+  {id:'O1', lane:'entry', kind:'orchestrator', color:'var(--c-main)', title:'六阶段编排器', sub:'从建目录到双 Agent 精炼', files:'SKILL.md · Phase 0.5–5', do:'定义目录、采集、检查点、提炼、构建、验证和后置精炼的完整生产流程。', flow:['创建自包含 Skill 目录','采集并持久化证据','两次人工检查点','构建与双层验证'], tables:[{name:'阶段骨架',head:['阶段','产物'],rows:[['0.5','Skill 目录'],['1','六路研究'],['2–3','模型与 SKILL.md'],['4–5','验证与精炼']]}], i18n:{en:{title:'Six-Phase Orchestrator',sub:'Directory setup through dual-agent refinement',files:'SKILL.md · Phase 0.5–5',do:'Defines the end-to-end production flow: setup, collection, checkpoints, synthesis, build, validation, and refinement.',flow:['Create a self-contained Skill directory','Collect and persist evidence','Run two human checkpoints','Build and verify twice'],tables:[{name:'Phase skeleton',head:['Phase','Artifact'],rows:[['0.5','Skill directory'],['1','Six research tracks'],['2–3','Models and SKILL.md'],['4–5','Validation and refinement']]}]}}},
+  {id:'E1', lane:'evidence', kind:'research', color:'var(--c-token)', title:'六路研究底稿', sub:'证据并行采集', files:'SKILL.md · Phase 1<br>examples/*/references/research/', do:'按著作、对话、表达、他者评价、决策和时间线六个维度收集可追溯材料。', tables:[{name:'研究维度',head:['编号','维度'],rows:[['01','著作与系统思考'],['02','长对话'],['03','表达 DNA'],['04','外部评价'],['05','决策记录'],['06','时间线']]}], i18n:{en:{title:'Six Research Tracks',sub:'Parallel evidence collection',files:'SKILL.md · Phase 1<br>examples/*/references/research/',do:'Collects traceable evidence across writings, conversations, expression, external views, decisions, and timeline.',tables:[{name:'Research tracks',head:['No.','Dimension'],rows:[['01','Writings'],['02','Conversations'],['03','Expression DNA'],['04','External views'],['05','Decisions'],['06','Timeline']]}]}}},
+  {id:'E2', lane:'evidence', kind:'tool', color:'var(--c-token)', title:'字幕采集器', sub:'公开视频转原始证据', files:'scripts/download_subtitles.sh', do:'调用 yt-dlp，按中文、英文、自动字幕的顺序下载 SRT 或 VTT。', flow:['列出可用字幕','优先人工中文字幕','降级英文或自动字幕'], i18n:{en:{title:'Subtitle Collector',sub:'Public video to raw evidence',files:'scripts/download_subtitles.sh',do:'Uses yt-dlp to fetch SRT or VTT in Chinese, English, then auto-caption fallback order.',flow:['List available captions','Prefer human Chinese captions','Fall back to English or auto captions']}}},
+  {id:'E3', lane:'evidence', kind:'tool', color:'var(--c-token)', title:'Transcript 清洗', sub:'字幕转可读语料', files:'scripts/srt_to_transcript.py', do:'移除时间戳、序号、HTML 和连续重复行，把 SRT/VTT 整理成段落文本。', tables:[{name:'转换',head:['输入','输出'],rows:[['.srt / .vtt','*_transcript.txt'],['时间轴字幕','去重段落文本']]}], i18n:{en:{title:'Transcript Cleaner',sub:'Captions to readable corpus',files:'scripts/srt_to_transcript.py',do:'Removes timestamps, indexes, HTML, and adjacent duplicates from SRT/VTT, then emits paragraph text.',tables:[{name:'Conversion',head:['Input','Output'],rows:[['.srt / .vtt','*_transcript.txt'],['Timed captions','Deduplicated paragraphs']]}]}}},
+  {id:'E4', lane:'evidence', kind:'tool', color:'var(--c-token)', title:'研究合并器', sub:'Phase 1.5 检查点', files:'scripts/merge_research.py', do:'扫描六份研究文件，统计来源、一二手标记、关键发现、缺失维度和显式矛盾。', tables:[{name:'摘要信号',head:['信号','用途'],rows:[['唯一 URL','来源规模'],['一手/二手标记','证据结构'],['缺失与矛盾','补研决策']]}], i18n:{en:{title:'Research Merger',sub:'Phase 1.5 checkpoint',files:'scripts/merge_research.py',do:'Scans six research files for sources, primary/secondary markers, findings, gaps, and explicit contradictions.',tables:[{name:'Summary signals',head:['Signal','Use'],rows:[['Unique URLs','Source volume'],['Primary/secondary markers','Evidence mix'],['Gaps and tensions','Follow-up research']]}]}}},
+  {id:'S1', lane:'synthesis', kind:'method', color:'var(--c-main)', title:'提炼方法论', sub:'从观点到心智模型', files:'references/extraction-framework.md', do:'用跨域复现、生成力和排他性三重验证筛选心智模型，并规范表达 DNA 与矛盾处理。', tables:[{name:'三重验证',head:['测试','问题'],rows:[['跨域复现','是否跨两个以上领域出现'],['生成力','能否推断新问题立场'],['排他性','是否具有独特视角']]}], i18n:{en:{title:'Extraction Framework',sub:'Claims into mental models',files:'references/extraction-framework.md',do:'Uses cross-domain recurrence, generativity, and distinctiveness to qualify mental models and handle voice and tensions.',tables:[{name:'Triple validation',head:['Test','Question'],rows:[['Cross-domain recurrence','Appears in two or more domains?'],['Generativity','Predicts a stance on new questions?'],['Distinctiveness','Encodes a non-generic lens?']]}]}}},
+  {id:'S2', lane:'synthesis', kind:'orchestrator', color:'var(--c-main)', title:'提炼检查点', sub:'研究确认与结构化合成', files:'SKILL.md · Phase 1.5–2.5', do:'在构建前展示研究质量和提炼摘要，让用户纠偏证据缺口与模型选择。', flow:['汇总研究质量','筛选 3–7 个模型','提炼启发式与表达 DNA','用户确认后构建'], i18n:{en:{title:'Synthesis Checkpoints',sub:'Research review and structured synthesis',files:'SKILL.md · Phase 1.5–2.5',do:'Surfaces research quality and synthesis summaries before build so evidence gaps and model choices can be corrected.',flow:['Summarize research quality','Select 3–7 models','Extract heuristics and expression DNA','Build after user confirmation']}}},
+  {id:'S3', lane:'synthesis', kind:'template', color:'var(--c-main)', title:'人物 Skill 模板', sub:'目标产物骨架', files:'references/skill-template.md', do:'规定人物视角 Skill 的角色规则、心智模型、启发式、表达 DNA、时间线、边界和来源结构。', tables:[{name:'核心 Section',head:['部分','作用'],rows:[['角色规则','防漂移与退出'],['心智模型','证据、应用、局限'],['诚实边界','标注推断与时效'],['来源附录','保留可追溯性']]}], i18n:{en:{title:'Perspective Skill Template',sub:'Target artifact skeleton',files:'references/skill-template.md',do:'Defines role rules, mental models, heuristics, expression DNA, timeline, boundaries, and source structure.',tables:[{name:'Core sections',head:['Section','Purpose'],rows:[['Role rules','Drift control and exit'],['Mental models','Evidence, use, limits'],['Honest boundary','Inference and freshness'],['Sources','Traceability']]}]}}},
+  {id:'S4', lane:'synthesis', kind:'output', color:'var(--c-main)', title:'Perspective Skill 产物', sub:'可安装认知顾问', files:'examples/*-perspective/SKILL.md<br>examples/*/references/', do:'把提炼结果封装为自包含、可安装、可追溯来源的人物或主题 Skill。', tables:[{name:'仓库现状',head:['资产','数量'],rows:[['示例 SKILL.md','15'],['研究底稿','59'],['目标形态','独立 Skill 目录']]}], i18n:{en:{title:'Perspective Skill Output',sub:'Installable cognitive advisor',files:'examples/*-perspective/SKILL.md<br>examples/*/references/',do:'Packages distilled results as self-contained, installable person or topic Skills with traceable sources.',tables:[{name:'Repository snapshot',head:['Asset','Count'],rows:[['Example SKILL.md','15'],['Research notes','59'],['Target form','Standalone Skill directory']]}]}}},
+  {id:'Q1', lane:'quality', kind:'qa', color:'var(--c-qa)', title:'静态质量检查', sub:'Phase 4 结构门禁', files:'scripts/quality_check.py', do:'检查模型数量、局限、表达辨识度、诚实边界、内在张力和一手来源标记。', tables:[{name:'六项检查',head:['类别','阈值示例'],rows:[['心智模型','3–7'],['诚实边界','至少 3 条'],['内在张力','至少 2 处'],['一手来源','高于 50%']]}], i18n:{en:{title:'Static Quality Check',sub:'Phase 4 structure gate',files:'scripts/quality_check.py',do:'Checks model count, limitations, voice, honest boundaries, tensions, and primary-source markers.',tables:[{name:'Six checks',head:['Category','Example threshold'],rows:[['Mental models','3–7'],['Honest boundaries','At least 3'],['Tensions','At least 2'],['Primary sources','Above 50%']]}]}}},
+  {id:'Q2', lane:'quality', kind:'qa', color:'var(--c-qa)', title:'保真度评分法', sub:'独立双 Agent 盲测', files:'references/fidelity-scorecard.md', do:'用立场一致性、风格、边缘诚实度、来源透明度和结构完整度构成 100 分评分卡。', tables:[{name:'评分权重',head:['维度','分值'],rows:[['立场一致性','30'],['风格辨识度','20'],['边缘诚实度','20'],['来源透明度','15'],['结构完整度','15']]}], i18n:{en:{title:'Fidelity Scorecard',sub:'Independent dual-agent blind test',files:'references/fidelity-scorecard.md',do:'Defines a 100-point score across stance, voice, edge honesty, source transparency, and structure.',tables:[{name:'Score weights',head:['Dimension','Points'],rows:[['Stance consistency','30'],['Voice distinctiveness','20'],['Edge honesty','20'],['Source transparency','15'],['Structure completeness','15']]}]}}},
+  {id:'Q3', lane:'quality', kind:'qa', color:'var(--c-qa)', title:'实测评分报告', sub:'可审计质量证据', files:'examples/*/FIDELITY.md', do:'保存每个官方示例的独立双 Agent 测试日期、分数、维度判定和扣分理由。', tables:[{name:'证据规模',head:['报告','覆盖'],rows:[['FIDELITY.md','15 份'],['最低社区门槛','B 级 / 70 分']]}], i18n:{en:{title:'Measured Fidelity Reports',sub:'Auditable quality evidence',files:'examples/*/FIDELITY.md',do:'Stores test dates, scores, dimension judgments, and deductions from independent dual-agent evaluations.',tables:[{name:'Evidence volume',head:['Artifact','Coverage'],rows:[['FIDELITY.md','15 reports'],['Community minimum','Grade B / 70']]}]}}},
+  {id:'L1', lane:'library', kind:'example', color:'var(--c-ref)', title:'官方示例库', sub:'人物与主题完整样本', files:'examples/*/', do:'提供从调研底稿、成品 Skill 到 FIDELITY 报告的端到端样本；部分示例含领域专用脚本。', tables:[{name:'样本构成',head:['类型','代表'],rows:[['人物视角','Naval、Musk、Feynman 等'],['主题 Skill','X Mastery Mentor'],['专用工具','MrBeast 分析脚本']]}], i18n:{en:{title:'Official Example Library',sub:'Complete person and topic specimens',files:'examples/*/',do:'Provides end-to-end specimens from research notes through Skill output and fidelity reports; some include domain tools.',tables:[{name:'Specimen mix',head:['Type','Examples'],rows:[['Person perspectives','Naval, Musk, Feynman, etc.'],['Topic Skill','X Mastery Mentor'],['Domain tools','MrBeast analysis scripts']]}]}}},
+  {id:'C1', lane:'community', kind:'policy', color:'var(--c-ref)', title:'贡献规则', sub:'核心资产与伦理边界', files:'CONTRIBUTING.md', do:'规定根 SKILL.md 不接受外部修改，社区作品走独立仓库与索引，并设置隐私和高责任领域红线。', tables:[{name:'贡献路径',head:['改动','入口'],rows:[['方法论建议','Issue'],['工具脚本修复','Pull Request'],['人物 Skill','独立仓库 + COMMUNITY']]}], i18n:{en:{title:'Contribution Contract',sub:'Core asset and ethics boundary',files:'CONTRIBUTING.md',do:'Protects the root SKILL.md, routes community work through separate repositories, and sets privacy and high-stakes boundaries.',tables:[{name:'Contribution routes',head:['Change','Route'],rows:[['Method proposal','Issue'],['Tool fix','Pull Request'],['Perspective Skill','Own repo + COMMUNITY']]}]}}},
+  {id:'C2', lane:'community', kind:'policy', color:'var(--c-ref)', title:'社区索引', sub:'外部生态目录', files:'COMMUNITY.md', do:'收录独立维护的人物合集、多人格编排和主题应用，同时明确收录不等于背书。', tables:[{name:'索引分区',head:['分区','内容'],rows:[['人物合集','Perspective Skills'],['多人编排','结构化辩论'],['主题应用','方法论领域迁移']]}], i18n:{en:{title:'Community Index',sub:'External ecosystem directory',files:'COMMUNITY.md',do:'Lists independently maintained collections, multi-persona orchestration, and domain adaptations without implying endorsement.',tables:[{name:'Index sections',head:['Section','Content'],rows:[['Collections','Perspective Skills'],['Orchestration','Structured debate'],['Domain apps','Method adaptations']]}]}}},
+  {id:'C3', lane:'community', kind:'ci', color:'var(--c-qa)', title:'社区 PR 门禁', sub:'只读基线的自动检查', files:'.github/workflows/community-pr-check.yml<br>.github/scripts/community_check.py', do:'在 COMMUNITY.md PR 上只检出主分支脚本，检查改动范围、目标仓库结构、诚实边界和真实 FIDELITY 分数。', flow:['PR 仅触发 COMMUNITY.md 路径','检出本仓库默认分支','通过 GitHub API 检查外部仓库','回写检查评论'], i18n:{en:{title:'Community PR Gate',sub:'Read-only baseline automation',files:'.github/workflows/community-pr-check.yml<br>.github/scripts/community_check.py',do:'For COMMUNITY.md PRs, checks only the base-branch script, then validates scope, target structure, honest boundaries, and real fidelity scores.',flow:['Trigger only on COMMUNITY.md','Checkout the base repository','Inspect external repos via GitHub API','Post the check result']}}},
+  {id:'D1', lane:'community', kind:'docs', color:'var(--c-ref)', title:'文档与传播层', sub:'多语言入口与演示资产', files:'README.md<br>README_EN.md · README_ES.md<br>README_JA.md · README_KO.md<br>assets/ · promo/', do:'解释安装、使用、方法和示例，并通过五种语言与视觉素材承担项目发现和传播。', tables:[{name:'文档覆盖',head:['资产','范围'],rows:[['README','中文、英、西、日、韩'],['assets','Banner 与 Hero'],['promo','卡片、Deck、Landing']]}], i18n:{en:{title:'Docs & Promotion',sub:'Multilingual entry and demo assets',files:'README.md<br>README_EN.md · README_ES.md<br>README_JA.md · README_KO.md<br>assets/ · promo/',do:'Explains installation, use, method, and examples across five languages and supporting visual assets.',tables:[{name:'Documentation coverage',head:['Asset','Scope'],rows:[['README','ZH, EN, ES, JA, KO'],['assets','Banner and Hero'],['promo','Cards, deck, landing']]}]}}}
+];
+
+const LINKS = [
+  {from:'U1', to:'O1', color:'var(--c-main)', label:'选择执行路径', i18n:{en:{label:'select execution route'}}},
+  {from:'O1', to:'E1', color:'var(--c-main)', label:'启动 Phase 1', i18n:{en:{label:'start Phase 1'}}},
+  {from:'O1', to:'S2', color:'var(--c-main)', label:'设置两次检查点', i18n:{en:{label:'set two checkpoints'}}},
+  {from:'O1', to:'Q1', color:'var(--c-qa)', label:'Phase 4 调用', dash:true, i18n:{en:{label:'Phase 4 invocation'}}},
+  {from:'E2', to:'E3', color:'var(--c-token)', label:'SRT / VTT', i18n:{en:{label:'SRT / VTT'}}},
+  {from:'E3', to:'E1', color:'var(--c-token)', label:'清洗后 transcript', i18n:{en:{label:'clean transcript'}}},
+  {from:'E1', to:'E4', color:'var(--c-main)', label:'六份研究文件', i18n:{en:{label:'six research files'}}},
+  {from:'E4', to:'S2', color:'var(--c-main)', label:'研究质量摘要', i18n:{en:{label:'research quality summary'}}},
+  {from:'E1', to:'S1', color:'var(--c-main)', label:'候选观点与证据', i18n:{en:{label:'candidate claims and evidence'}}},
+  {from:'S1', to:'S2', color:'var(--c-main)', label:'三重验证结果', i18n:{en:{label:'triple-validation results'}}},
+  {from:'S2', to:'S3', color:'var(--c-main)', label:'结构化提炼结果', i18n:{en:{label:'structured synthesis'}}},
+  {from:'S3', to:'S4', color:'var(--c-main)', label:'填充目标骨架', i18n:{en:{label:'fill target skeleton'}}},
+  {from:'S4', to:'Q1', color:'var(--c-qa)', label:'结构静态检查', dash:true, i18n:{en:{label:'static structure check'}}},
+  {from:'Q1', to:'S2', color:'var(--c-qa)', label:'失败项回到提炼', dash:true, i18n:{en:{label:'failed checks return to synthesis'}}},
+  {from:'S4', to:'Q2', color:'var(--c-qa)', label:'进入独立盲测', dash:true, i18n:{en:{label:'enter independent blind test'}}},
+  {from:'Q2', to:'Q3', color:'var(--c-qa)', label:'生成 100 分报告', dash:true, i18n:{en:{label:'produce 100-point report'}}},
+  {from:'S4', to:'L1', color:'var(--c-ref)', label:'官方成品样本', dash:true, i18n:{en:{label:'official output specimens'}}},
+  {from:'Q3', to:'L1', color:'var(--c-ref)', label:'每例绑定质量证据', dash:true, i18n:{en:{label:'bind quality evidence to each example'}}},
+  {from:'L1', to:'D1', color:'var(--c-ref)', label:'README 展示案例', dash:true, i18n:{en:{label:'examples showcased in README'}}},
+  {from:'O1', to:'D1', color:'var(--c-ref)', label:'文档解释工作原理', dash:true, i18n:{en:{label:'workflow documented for users'}}},
+  {from:'L1', to:'C1', color:'var(--c-ref)', label:'官方样本定义基线', dash:true, i18n:{en:{label:'official specimens set baseline'}}},
+  {from:'C1', to:'C2', color:'var(--c-main)', label:'社区作品走索引', i18n:{en:{label:'community work goes to index'}}},
+  {from:'C1', to:'C3', color:'var(--c-qa)', label:'准入规则编码', dash:true, i18n:{en:{label:'encode admission rules'}}},
+  {from:'C2', to:'C3', color:'var(--c-qa)', label:'COMMUNITY PR 触发', dash:true, i18n:{en:{label:'COMMUNITY PR trigger'}}}
+];
+
+const I18N = {
+  zh:{
+    title:'nuwa-skill · 认知蒸馏架构图',
+    subtitle:'从人名或模糊需求出发，经六路证据采集、三重验证、Skill 构建与双层质检，形成可安装的 Perspective Skill。基于 fe03746。',
+    panel:'检视面板', panelHint:'悬停或聚焦模块查看规格 · 单击 / Enter 锁定',
+    what:'做什么', flow:'流程', spec:'规格', files:'文件', upstream:'上游', downstream:'下游',
+    entry:'入口', exit:'终点', lockedLabel:'已锁定',
+    legendMain:'主流程：分流 → 研究 → 提炼 → 构建',
+    legendToken:'证据注入：素材 → 底稿 → 模型',
+    legendRef:'参考与示例关系',
+    legendQa:'质检回环与社区门禁',
+    langZh:'中', themeAuto:'跟随系统',
+    theme:{auto:'跟随系统',dark:'夜间',light:'日间'}
+  },
+  en:{
+    title:'nuwa-skill · Cognitive Distillation Architecture',
+    subtitle:'A named person or fuzzy need flows through six evidence tracks, triple validation, Skill assembly, and two-layer verification into an installable Perspective Skill. Based on fe03746.',
+    panel:'INSPECTOR', panelHint:'Hover or focus a module · Click / Enter to lock',
+    what:'PURPOSE', flow:'FLOW', spec:'SPEC', files:'FILES', upstream:'UPSTREAM', downstream:'DOWNSTREAM',
+    entry:'ENTRY', exit:'EXIT', lockedLabel:'LOCKED',
+    legendMain:'Main flow: route → research → synthesize → build',
+    legendToken:'Evidence injection: source → notes → models',
+    legendRef:'Reference and example relationships',
+    legendQa:'Quality loops and community gates',
+    langZh:'中', themeAuto:'System',
+    theme:{auto:'System',dark:'Dark',light:'Light'}
+  }
+};
+
+/* ============================================================
+   渲染引擎（数据驱动，与内容解耦）
+   ============================================================ */
+const NS = 'http://www.w3.org/2000/svg';
+let currentLang = (localStorage.getItem('bp.lang') || 'zh');
+let lockedId = null;
+let currentId = null;
+
+const byId = {};
+MODULES.forEach(m => { byId[m.id] = m; });
+
+/* ----- 主题 ----- */
+const themeBtn = document.getElementById('themeBtn');
+const THEMES = ['auto', 'dark', 'light'];
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t === 'auto' ? '' : t;
+  localStorage.setItem('bp.theme', t);
+  themeBtn.textContent = I18N[currentLang].theme[t];
+}
+applyTheme(localStorage.getItem('bp.theme') || 'auto');
+themeBtn.addEventListener('click', () => {
+  const cur = localStorage.getItem('bp.theme') || 'auto';
+  applyTheme(THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length]);
+});
+
+/* ----- 语言 ----- */
+function t(moduleObj, field) {
+  if (currentLang === 'en' && moduleObj.i18n && moduleObj.i18n.en && moduleObj.i18n.en[field] !== undefined) {
+    return moduleObj.i18n.en[field];
+  }
+  return moduleObj[field];
+}
+function tLink(link, field) {
+  if (currentLang === 'en' && link.i18n && link.i18n.en && link.i18n.en[field] !== undefined) {
+    return link.i18n.en[field];
+  }
+  return link[field];
+}
+function tLane(lane, field) {
+  if (currentLang === 'en' && lane.i18n && lane.i18n.en && lane.i18n.en[field] !== undefined) {
+    return lane.i18n.en[field];
+  }
+  return lane[field];
+}
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[ch]);
+}
+function safeBreaks(value) {
+  return String(value ?? '').split(/<br\s*\/?>/i).map(esc).join('<br>');
+}
+function applyLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('bp.lang', lang);
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    const val = I18N[lang][key];
+    if (val !== undefined) el.textContent = val;
+  });
+  document.querySelectorAll('.tbtn.lang').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === lang);
+  });
+  applyTheme(localStorage.getItem('bp.theme') || 'auto');
+  renderAll();
+  if (currentId) show(currentId);
+}
+document.querySelectorAll('.tbtn.lang').forEach(b => {
+  b.addEventListener('click', () => applyLang(b.dataset.lang));
+});
+
+/* ----- 渲染 lane + 卡片 ----- */
+const lanesEl = document.getElementById('lanes');
+const svgEl = document.getElementById('wires');
+const stage = document.getElementById('stage');
+const ipBody = document.getElementById('ip-body');
+
+function renderLanes() {
+  lanesEl.innerHTML = '';
+  LANES.forEach(l => {
+    const lane = document.createElement('div');
+    lane.className = 'lane';
+    const lab = document.createElement('div');
+    lab.className = 'lanelab';
+    lab.innerHTML = '<b>' + esc(tLane(l, 'lab')) + '</b>' + esc(tLane(l, 'sub'));
+    const row = document.createElement('div');
+    row.className = 'row';
+    MODULES.filter(m => m.lane === l.id).forEach(m => {
+      const card = document.createElement('div');
+      card.className = 'mod';
+      card.id = 'm-' + m.id;
+      card.dataset.id = m.id;
+      card.dataset.lockedLabel = I18N[currentLang].lockedLabel;
+      card.tabIndex = 0;
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-pressed', 'false');
+      card.innerHTML =
+        '<div class="kind" style="color:' + esc(m.color) + '">' + esc(KIND_CN[m.kind]) + '</div>' +
+        '<h3>' + esc(t(m, 'title')) + '</h3>' +
+        '<div class="sub">' + esc(t(m, 'sub')) + '</div>' +
+        '<div class="files">' + safeBreaks(t(m, 'files')) + '</div>';
+      row.appendChild(card);
+    });
+    lane.appendChild(lab);
+    lane.appendChild(row);
+    lanesEl.appendChild(lane);
+  });
+  // 重新绑定事件
+  document.querySelectorAll('.mod').forEach(n => {
+    n.addEventListener('mouseenter', () => { if (!lockedId) show(n.dataset.id); });
+    n.addEventListener('focus', () => { if (!lockedId) show(n.dataset.id); });
+    n.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = n.dataset.id;
+      if (lockedId === id) { setLocked(null); show(id); }
+      else { setLocked(id); show(id); }
+    });
+    n.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      n.click();
+    });
+  });
+}
+
+/* ----- SVG 工具 ----- */
+function el(tag, attrs) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  return n;
+}
+function box(id) {
+  const r = document.getElementById('m-' + id).getBoundingClientRect();
+  const s = stage.getBoundingClientRect();
+  return { x: r.left - s.left, y: r.top - s.top, w: r.width, h: r.height,
+           cx: r.left - s.left + r.width / 2, cy: r.top - s.top + r.height / 2 };
+}
+function anchors(a, b) {
+  const dx = b.cx - a.cx, dy = b.cy - a.cy;
+  if (Math.abs(dy) * 1.1 >= Math.abs(dx)) {
+    return dy > 0
+      ? { x1: a.cx, y1: a.y + a.h, x2: b.cx, y2: b.y, ox: 0, oy: 1, ix: 0, iy: -1 }
+      : { x1: a.cx, y1: a.y, x2: b.cx, y2: b.y + b.h, ox: 0, oy: -1, ix: 0, iy: 1 };
+  }
+  return dx > 0
+    ? { x1: a.x + a.w, y1: a.cy, x2: b.x, y2: b.cy, ox: 1, oy: 0, ix: -1, iy: 0 }
+    : { x1: a.x, y1: a.cy, x2: b.x + b.w, y2: b.cy, ox: -1, oy: 0, ix: 1, iy: 0 };
+}
+
+const wires = [];
+function drawWires() {
+  svgEl.innerHTML = '';
+  wires.length = 0;
+  const sr = stage.getBoundingClientRect();
+  svgEl.setAttribute('viewBox', '0 0 ' + sr.width + ' ' + sr.height);
+  svgEl.setAttribute('width', sr.width);
+  svgEl.setAttribute('height', sr.height);
+  LINKS.forEach(l => {
+    const a = box(l.from), b = box(l.to), p = anchors(a, b);
+    const dist = Math.hypot(p.x2 - p.x1, p.y2 - p.y1);
+    const k = Math.max(26, Math.min(90, dist * 0.36));
+    const d = 'M' + p.x1 + ' ' + p.y1 +
+      ' C' + (p.x1 + p.ox * k) + ' ' + (p.y1 + p.oy * k) +
+      ' ' + (p.x2 + p.ix * k) + ' ' + (p.y2 + p.iy * k) +
+      ' ' + p.x2 + ' ' + p.y2;
+    const path = el('path', { d, class: 'wire', stroke: l.color });
+    if (l.dash) path.setAttribute('stroke-dasharray', '5 4');
+    path.dataset.from = l.from; path.dataset.to = l.to;
+    svgEl.appendChild(path);
+    const mx = (p.x1 + p.x2) / 2, my = (p.y1 + p.y2) / 2;
+    const text = el('text', { x: mx, y: my - 5, class: 'wlabel', 'text-anchor': 'middle' });
+    text.textContent = tLink(l, 'label');
+    text.dataset.from = l.from; text.dataset.to = l.to;
+    svgEl.appendChild(text);
+    wires.push(path, text);
+  });
+}
+
+/* ----- 表格渲染 ----- */
+function renderTable(t) {
+  const renderCell = value => value && typeof value === 'object' && typeof value.html === 'string'
+    ? value.html : esc(value);
+  const thead = '<thead><tr>' + t.head.map(h => '<th>' + esc(h) + '</th>').join('') + '</tr></thead>';
+  const tbody = '<tbody>' + t.rows.map(r =>
+    '<tr>' + r.map((c, i) => {
+      const cls = (i === 0 && t.head.length >= 2) ? ' class="k"' : '';
+      return '<td' + cls + '>' + renderCell(c) + '</td>';
+    }).join('') + '</tr>'
+  ).join('') + '</tbody>';
+  return '<div class="ip-tname">' + esc(t.name) + '</div>' +
+    '<table class="ip-t">' + thead + tbody + '</table>';
+}
+
+/* ----- 检视面板 ----- */
+function show(id) {
+  currentId = id;
+  const m = byId[id];
+  const ups = LINKS.filter(l => l.to === id).map(l => t(byId[l.from], 'title'));
+  const downs = LINKS.filter(l => l.from === id).map(l => t(byId[l.to], 'title'));
+  const li = I18N[currentLang];
+  let html = '';
+  html += '<div class="ip-file">' + esc(t(m, 'title')) + '</div>';
+  html += '<div class="ip-h2">' + esc(t(m, 'title')) + '</div>';
+  html += '<div class="ip-role" style="color:' + esc(m.color) + '">' + esc(KIND_CN[m.kind]) + ' · ' + esc(t(m, 'sub')) + '</div>';
+  html += '<div class="ip-section first"><div class="ip-lab">' + esc(li.what) + '</div><p>' + esc(t(m, 'do')) + '</p></div>';
+  if (m.flow) {
+    html += '<div class="ip-section"><div class="ip-lab">' + esc(li.flow) + '</div><ol class="ip-flow">';
+    const flowItems = (currentLang === 'en' && m.i18n && m.i18n.en && m.i18n.en.flow) ? m.i18n.en.flow : m.flow;
+    flowItems.forEach(step => { html += '<li>' + esc(step) + '</li>'; });
+    html += '</ol></div>';
+  }
+  if (m.tables && m.tables.length) {
+    html += '<div class="ip-section"><div class="ip-lab">' + esc(li.spec) + '</div>';
+    const tables = (currentLang === 'en' && m.i18n && m.i18n.en && m.i18n.en.tables) ? m.i18n.en.tables : m.tables;
+    tables.forEach(tbl => { html += renderTable(tbl); });
+    html += '</div>';
+  }
+  html += '<div class="ip-section"><div class="ip-lab">' + esc(li.files) + '</div>' +
+    '<div style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--fs-5);color:var(--c-main);background:var(--c-amber-soft);padding:6px 9px;border-radius:6px;word-break:break-all;line-height:1.5">' + safeBreaks(t(m, 'files')) + '</div></div>';
+  html += '<div class="ip-flow-line">' + esc(li.upstream) + '<b>' + esc(ups.length ? ups.join(' · ') : li.entry) + '</b>' + esc(li.downstream) + '<b>' + esc(downs.length ? downs.join(' · ') : li.exit) + '</b></div>';
+  ipBody.innerHTML = html;
+  highlight(id);
+}
+
+/* ----- 高亮 ----- */
+function highlight(id) {
+  const kin = new Set([id]);
+  LINKS.forEach(l => {
+    if (l.from === id) kin.add(l.to);
+    if (l.to === id) kin.add(l.from);
+  });
+  document.querySelectorAll('.mod').forEach(n => {
+    const on = kin.has(n.dataset.id);
+    n.classList.toggle('dim', !on);
+    n.classList.toggle('hot', on);
+    n.classList.toggle('sel', n.dataset.id === id);
+  });
+  wires.forEach(w => {
+    const on = w.dataset.from === id || w.dataset.to === id;
+    w.classList.toggle('dim', !on);
+    w.classList.toggle('hot', on);
+  });
+}
+
+/* ----- 锁定 ----- */
+function setLocked(id) {
+  if (lockedId) {
+    const previous = document.getElementById('m-' + lockedId);
+    previous?.classList.remove('locked');
+    previous?.setAttribute('aria-pressed', 'false');
+  }
+  lockedId = id;
+  if (lockedId) {
+    const current = document.getElementById('m-' + lockedId);
+    current?.classList.add('locked');
+    current?.setAttribute('aria-pressed', 'true');
+  }
+}
+document.addEventListener('click', () => { if (lockedId) setLocked(null); });
+
+/* ----- resize ----- */
+let raf = null;
+function schedule() {
+  if (raf) cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(() => { drawWires(); if (currentId) highlight(currentId); });
+}
+window.addEventListener('resize', schedule);
+if (window.ResizeObserver) new ResizeObserver(schedule).observe(stage);
+
+function renderAll() {
+  renderLanes();
+  drawWires();
+  if (currentId) highlight(currentId);
+}
+
+applyLang(currentLang);
+const initialId = MODULES[0]?.id;
+if (initialId) {
+  setLocked(initialId);
+  show(initialId);
+}
+</script>
+</body>
+</html>
