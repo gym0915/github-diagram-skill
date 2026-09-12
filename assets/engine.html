@@ -286,7 +286,7 @@ ol.ip-flow li:before { content: counter(s); position: absolute; left: 0; top: 4p
 
 <script>
 /* ============================================================
-   __DATA__  ← 替换为目标仓库的 MODULES / LINKS / LANES / I18N
+   DATA SLOT  ← 用目标仓库的 MODULES / LINKS / LANES / I18N 替换下一行
    ============================================================ */
 __DATA__
 
@@ -294,7 +294,15 @@ __DATA__
    渲染引擎（数据驱动，与内容解耦）
    ============================================================ */
 const NS = 'http://www.w3.org/2000/svg';
-let currentLang = (localStorage.getItem('bp.lang') || 'zh');
+const storage = {
+  getItem(key) {
+    try { return window.localStorage.getItem(key); } catch { return null; }
+  },
+  setItem(key, value) {
+    try { window.localStorage.setItem(key, value); } catch {}
+  },
+};
+let currentLang = (storage.getItem('bp.lang') || 'zh');
 let lockedId = null;
 let currentId = null;
 
@@ -306,12 +314,12 @@ const themeBtn = document.getElementById('themeBtn');
 const THEMES = ['auto', 'dark', 'light'];
 function applyTheme(t) {
   document.documentElement.dataset.theme = t === 'auto' ? '' : t;
-  localStorage.setItem('bp.theme', t);
+  storage.setItem('bp.theme', t);
   themeBtn.textContent = I18N[currentLang].theme[t];
 }
-applyTheme(localStorage.getItem('bp.theme') || 'auto');
+applyTheme(storage.getItem('bp.theme') || 'auto');
 themeBtn.addEventListener('click', () => {
-  const cur = localStorage.getItem('bp.theme') || 'auto';
+  const cur = storage.getItem('bp.theme') || 'auto';
   applyTheme(THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length]);
 });
 
@@ -344,7 +352,7 @@ function safeBreaks(value) {
 }
 function applyLang(lang) {
   currentLang = lang;
-  localStorage.setItem('bp.lang', lang);
+  storage.setItem('bp.lang', lang);
   document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.dataset.i18n;
@@ -354,7 +362,7 @@ function applyLang(lang) {
   document.querySelectorAll('.tbtn.lang').forEach(b => {
     b.classList.toggle('active', b.dataset.lang === lang);
   });
-  applyTheme(localStorage.getItem('bp.theme') || 'auto');
+  applyTheme(storage.getItem('bp.theme') || 'auto');
   renderAll();
   if (currentId) show(currentId);
 }

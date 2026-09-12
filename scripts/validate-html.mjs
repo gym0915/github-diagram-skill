@@ -172,7 +172,9 @@ if (hasDataTheme && hasPrefers) {
 }
 
 // 12. 语言切换按钮
-const hasLangBtn = /data-lang=/.test(html) && /localStorage\.setItem\('bp\.lang'/.test(script);
+const hasLangPersistence = /(?:localStorage|storage)\.setItem\('bp\.lang'/.test(script)
+  && /(?:localStorage|storage)\.getItem\('bp\.lang'/.test(script);
+const hasLangBtn = /data-lang=/.test(html) && hasLangPersistence;
 if (hasLangBtn) {
   log('✓', '语言切换按钮 + localStorage 持久化');
 } else {
